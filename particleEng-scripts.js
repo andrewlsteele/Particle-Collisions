@@ -1,4 +1,4 @@
-const canvas = document.getElementById('mazeCanvas');
+const canvas = document.getElementById('canvas');
 let start = null;
 let balls = [];
 let w = 0;
@@ -106,7 +106,7 @@ function startAnim(timestamp) {
                 b1.dy -= velocityComponentPerpendicularToTangent.dy;
                 b2.dx += velocityComponentPerpendicularToTangent.dx;
                 b2.dy += velocityComponentPerpendicularToTangent.dy;
-                
+
             }
         }
     }
