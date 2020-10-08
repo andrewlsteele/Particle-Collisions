@@ -106,6 +106,8 @@ function startAnim(timestamp) {
                 b1.dy -= velocityComponentPerpendicularToTangent.dy;
                 b2.dx += velocityComponentPerpendicularToTangent.dx;
                 b2.dy += velocityComponentPerpendicularToTangent.dy;
+
+                // This code was pretty much taken from here: http://flatredball.com/documentation/tutorials/math/circle-collision/
             }
         }
     }
