@@ -1,7 +1,6 @@
-# Particle-Engine
+# Circle collisions
 
-Controls:
-Left mouse button to create ball. Balls start with a random velocity and radius and start where the cursor is pointing.
+Left click to create ball. Balls start with a random velocity and radius and start where the cursor is pointing.
 
 Sources:
 Bouncing Mr. Speaker by Steve Birtles and 
