@@ -4,6 +4,7 @@ let balls = [];
 let w = 0;
 let h = 0;
 let mousePosition = {x: 0, y: 0}, leftMouseDown = false;
+let gravity = 0.3;
 
 function fixSize() {
     w = window.innerWidth;
@@ -17,8 +18,8 @@ function spawnBall() {
         let r = Math.random() * 30 + 20;
         let x = mousePosition.x;
         let y = mousePosition.y;
-        let dx = Math.random() * 20 - 10;
-        let dy = Math.random() * 20 - 10;
+        let dx = 0
+        let dy = 0
         balls.push({x, y, dx, dy, r});
         leftMouseDown = false;
 }
@@ -50,12 +51,15 @@ function pageLoad() {
 
 function startAnim(timestamp) {
     const context = canvas.getContext('2d');
-    context.fillStyle = '#2F4F4F';
+    context.fillStyle = "#D3D3D3";
     context.fillRect(0, 0, w, h);
     if (!start) start = timestamp;
     let progress = timestamp - start;
     let img = new Image();
     img.src = "red.png";
+
+    let gravity = parseFloat(document.getElementById("gravityRange").value);
+    // document.getElementById("gravityText").value = gravity;
 
     if (leftMouseDown === true) {
         spawnBall();
@@ -76,11 +80,13 @@ function startAnim(timestamp) {
         if (balls[i].y + balls[i].r > h) {
             balls[i].y = h - balls[i].r;
             balls[i].dy *= -1;
+            balls[i].dy /= 1.1;
         } else if (balls[i].y - balls[i].r < 0) {
             balls[i].y = balls[i].r;
             balls[i].dy *= -1;
         }
 
+        balls[i].dy += gravity;
         balls[i].x += balls[i].dx;
         balls[i].y += balls[i].dy;
         context.drawImage(img, balls[i].x - balls[i].r, balls[i].y - balls[i].r, balls[i].r * 2, balls[i].r * 2);
@@ -106,7 +112,6 @@ function startAnim(timestamp) {
                 b1.dy -= velocityComponentPerpendicularToTangent.dy;
                 b2.dx += velocityComponentPerpendicularToTangent.dx;
                 b2.dy += velocityComponentPerpendicularToTangent.dy;
-
             }
         }
     }
