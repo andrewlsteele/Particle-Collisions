@@ -59,7 +59,6 @@ function startAnim(timestamp) {
     img.src = "red.png";
 
     let gravity = parseFloat(document.getElementById("gravityRange").value);
-    // document.getElementById("gravityText").value = gravity;
 
     if (leftMouseDown === true) {
         spawnBall();
@@ -67,6 +66,59 @@ function startAnim(timestamp) {
 
     function distance(b1, b2) {
         return Math.sqrt(Math.pow(b2.x - b1.x, 2) + Math.pow(b2.y - b1.y, 2));
+    }
+
+    function midpoint(b1, b2) {
+        return {x: (b2.x + b1.x)/2, y: (b2.y + b1.y)/2};
+    }
+
+    for (i = 0; i < balls.length; i++) {
+        for (j = i + 1; j < balls.length; j++) {
+            const b1 = balls[i];
+            const b2 = balls[j];
+            const s = distance(b1, b2);
+            const overlap = b1.r + b2.r - s;
+            const mid = midpoint(b1, b2);
+
+            if (overlap >= 0) {
+
+                let unitVector = {x: (b2.x - b1.x) / s, y: (b2.y - b1.y) / s}; // Unit vector gives exact ratio of x to y of the vector.
+                let tanUnitVector = {x: -unitVector.y, y: unitVector.x}; // When one ball hits another, it is always at a tangent. Therefore, the angle between the tangent and the ball's vector will always be perpendicular. We can calculate the line vector of the tangent by using {x, y} --> {-y, x} (try on paper to see why this works).
+                let relativeVelocity = {dx: b1.dx - b2.dx, dy: b1.dy - b2.dy}; // We need the difference in the velocities because the original velocities don't matter.
+                let dotProduct = (tanUnitVector.x * relativeVelocity.dx) + (tanUnitVector.y * relativeVelocity.dy); // The tangent vector and the velocity vector are not perpendicular. We can use the dot product to find the multiplier by which the tangent vector meets the velocity vector.
+                let velocityComponentOnTangent = {dx: dotProduct*tanUnitVector.x, dy: dotProduct*tanUnitVector.y}; // By multiplying the dot product scalar by the unit vector of the tangent, we can find the whole velocity vector for the component parallel to the tangent.
+                let velocityComponentPerpendicularToTangent = {dx: relativeVelocity.dx - velocityComponentOnTangent.dx, dy: relativeVelocity.dy - velocityComponentOnTangent.dy}; // Using simple GCSE vector addition/subtraction, we can determine that the velocity vector plus the velocity component vector parallel to the tangent going backwards (so negative) must equal the velocity vector perpendicular to the tangent.
+
+                b1.dx -= velocityComponentPerpendicularToTangent.dx;
+                b1.dy -= velocityComponentPerpendicularToTangent.dy;
+                b2.dx += velocityComponentPerpendicularToTangent.dx;
+                b2.dy += velocityComponentPerpendicularToTangent.dy;
+
+                if (b1.x > b2.x) {
+                    if (b1.x + (b1.x-b2.x) * (overlap / s) > 0 && b1.x + (b1.x-b2.x) * (overlap / s) < w) {
+                        b1.x += (b1.x - b2.x) * (overlap / s);
+                    }
+                    if (b2.x + (b2.x-b1.x) * (overlap / s) > 0 && b2.x + (b2.x-b1.x) * (overlap / s) < w) {
+                        b2.x -= (b1.x - b2.x) * (overlap / s);
+                    }
+                } else if (b1.x < b2.x) {
+                    b2.x += (b2.x - b1.x) * (overlap / s);
+                    b1.x -= (b2.x - b1.x) * (overlap / s);
+                }
+                if (b1.y > b2.y) {
+                    if (b1.y + (b1.y-b2.y) * (overlap / s) > 0 && b1.y + (b1.y-b2.y) * (overlap / s) < h) {
+                        b1.y += (b1.y - b2.y) * (overlap / s);
+                    }
+                    if (b2.y + (b2.y-b1.y) * (overlap / s) > 0 && b2.y + (b2.y-b1.y) * (overlap / s) < h) {
+                        b2.y -= (b1.y - b2.y) * (overlap / s);
+                    }
+                } else if (b1.y < b2.y) {
+                    b2.y += (b2.y - b1.y) * (overlap / s);
+                    b1.y -= (b2.y - b1.y) * (overlap / s);
+                }
+
+            }
+        }
     }
 
     for (i=0; i < balls.length; i++) {
@@ -90,30 +142,6 @@ function startAnim(timestamp) {
         balls[i].x += balls[i].dx;
         balls[i].y += balls[i].dy;
         context.drawImage(img, balls[i].x - balls[i].r, balls[i].y - balls[i].r, balls[i].r * 2, balls[i].r * 2);
-    }
-
-    for (i = 0; i < balls.length; i++) {
-        for (j = i + 1; j < balls.length; j++) {
-            const b1 = balls[i];
-            const b2 = balls[j];
-            const s = distance(b1, b2);
-            const overlap = b1.r + b2.r - s;
-
-            if (overlap >= 0) {
-
-                let unitVector = {x: (b2.x - b1.x) / s, y: (b2.y - b1.y) / s}; // Unit vector gives exact ratio of x to y of the vector.
-                let tanUnitVector = {x: -unitVector.y, y: unitVector.x}; // When one ball hits another, it is always at a tangent. Therefore, the angle between the tangent and the ball's vector will always be perpendicular. We can calculate the line vector of the tangent by using {x, y} --> {-y, x} (try on paper to see why this works).
-                let relativeVelocity = {dx: b1.dx - b2.dx, dy: b1.dy - b2.dy}; // We need the difference in the velocities because the original velocities don't matter.
-                let dotProduct = (tanUnitVector.x * relativeVelocity.dx) + (tanUnitVector.y * relativeVelocity.dy); // The tangent vector and the velocity vector are not perpendicular. We can use the dot product to find the multiplier by which the tangent vector meets the velocity vector.
-                let velocityComponentOnTangent = {dx: dotProduct*tanUnitVector.x, dy: dotProduct*tanUnitVector.y}; // By multiplying the dot product scalar by the unit vector of the tangent, we can find the whole velocity vector for the component parallel to the tangent.
-                let velocityComponentPerpendicularToTangent = {dx: relativeVelocity.dx - velocityComponentOnTangent.dx, dy: relativeVelocity.dy - velocityComponentOnTangent.dy}; // Using simple GCSE vector addition/subtraction, we can determine that the velocity vector plus the velocity component vector parallel to the tangent going backwards (so negative) must equal the velocity vector perpendicular to the tangent.
-
-                b1.dx -= velocityComponentPerpendicularToTangent.dx;
-                b1.dy -= velocityComponentPerpendicularToTangent.dy;
-                b2.dx += velocityComponentPerpendicularToTangent.dx;
-                b2.dy += velocityComponentPerpendicularToTangent.dy;
-            }
-        }
     }
     window.requestAnimationFrame(startAnim);
 }
