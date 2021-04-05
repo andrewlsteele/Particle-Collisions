@@ -1,4 +1,4 @@
-# Circle collisions
+# Particle collisions
 
 Left click to create ball. Particles have random velocity, radius and colour and start where the cursor is pointing.
 
