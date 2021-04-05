@@ -1,10 +1,9 @@
 const canvas = document.getElementById('canvas');
 let start = null;
-let balls = [];
+let particles = [];
 let w = 0;
 let h = 0;
 let mousePosition = {x: 0, y: 0}, leftMouseDown = false;
-let gravity = 0.3;
 
 function fixSize() {
     w = window.innerWidth;
@@ -12,17 +11,18 @@ function fixSize() {
 
     canvas.width = w;
     canvas.height = h;
+    console.log("Fixing size");
 }
 
-function spawnBall() {
-        let r = Math.random() * 30 + 20;
-        let x = mousePosition.x;
-        let y = mousePosition.y;
-        let dx = 0
-        let dy = 0
-        balls.push({x, y, dx, dy, r});
+function particle() {
+        this.r = Math.random() * 30 + 20;
+        this.x = mousePosition.x;
+        this.y = mousePosition.y;
+        this.dx = Math.random() * 20 - 10;
+        this.dy = Math.random() * 20 - 10;
+        this.color = Math.floor(Math.random()*16777215).toString(16); // Random 5 hex values (16^5)
         leftMouseDown = false;
-}
+} // Constructor class for creating particles
 
 function pageLoad() {
     console.log("Page loaded");
@@ -51,34 +51,26 @@ function pageLoad() {
 
 function startAnim(timestamp) {
     const context = canvas.getContext('2d');
-    context.fillStyle = "#D3D3D3";
+    context.fillStyle = '#000000';
     context.fillRect(0, 0, w, h);
     if (!start) start = timestamp;
     let progress = timestamp - start;
-    let img = new Image();
-    img.src = "red.png";
-
-    let gravity = parseFloat(document.getElementById("gravityRange").value);
 
     if (leftMouseDown === true) {
-        spawnBall();
+        particles.push(new particle()); // Constructs new particle and adds to object list
+        console.log(particles);
     }
 
-    function distance(b1, b2) {
-        return Math.sqrt(Math.pow(b2.x - b1.x, 2) + Math.pow(b2.y - b1.y, 2));
+    function distance(p1, p2) {
+        return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2)); // Pythagoras Theorem to find distance between two points (centers of particles)
     }
 
-    function midpoint(b1, b2) {
-        return {x: (b2.x + b1.x)/2, y: (b2.y + b1.y)/2};
-    }
-
-    for (i = 0; i < balls.length; i++) {
-        for (j = i + 1; j < balls.length; j++) {
-            const b1 = balls[i];
-            const b2 = balls[j];
+    for (i = 0; i < particles.length; i++) {
+        for (j = i + 1; j < particles.length; j++) {
+            const b1 = particles[i];
+            const b2 = particles[j];
             const s = distance(b1, b2);
             const overlap = b1.r + b2.r - s;
-            const mid = midpoint(b1, b2);
 
             if (overlap >= 0) {
 
@@ -93,55 +85,46 @@ function startAnim(timestamp) {
                 b1.dy -= velocityComponentPerpendicularToTangent.dy;
                 b2.dx += velocityComponentPerpendicularToTangent.dx;
                 b2.dy += velocityComponentPerpendicularToTangent.dy;
-
-                if (b1.x > b2.x) {
-                    if (b1.x + (b1.x-b2.x) * (overlap / s) > 0 && b1.x + (b1.x-b2.x) * (overlap / s) < w) {
-                        b1.x += (b1.x - b2.x) * (overlap / s);
-                    }
-                    if (b2.x + (b2.x-b1.x) * (overlap / s) > 0 && b2.x + (b2.x-b1.x) * (overlap / s) < w) {
-                        b2.x -= (b1.x - b2.x) * (overlap / s);
-                    }
-                } else if (b1.x < b2.x) {
-                    b2.x += (b2.x - b1.x) * (overlap / s);
-                    b1.x -= (b2.x - b1.x) * (overlap / s);
-                }
-                if (b1.y > b2.y) {
-                    if (b1.y + (b1.y-b2.y) * (overlap / s) > 0 && b1.y + (b1.y-b2.y) * (overlap / s) < h) {
-                        b1.y += (b1.y - b2.y) * (overlap / s);
-                    }
-                    if (b2.y + (b2.y-b1.y) * (overlap / s) > 0 && b2.y + (b2.y-b1.y) * (overlap / s) < h) {
-                        b2.y -= (b1.y - b2.y) * (overlap / s);
-                    }
-                } else if (b1.y < b2.y) {
-                    b2.y += (b2.y - b1.y) * (overlap / s);
-                    b1.y -= (b2.y - b1.y) * (overlap / s);
-                }
-
             }
-        }
-    }
+        } // Loop to check every pair of particles if any overlap.
+          // Could be more efficient - implement sweep and prune algorithms or KD trees or bounding volume hierarchies.
 
-    for (i=0; i < balls.length; i++) {
-        if (balls[i].x + balls[i].r > w) {
-            balls[i].x = w - balls[i].r;
-            balls[i].dx *= -1;
-        } else if (balls[i].x - balls[i].r < 0) {
-            balls[i].x = balls[i].r;
-            balls[i].dx *= -1;
-        }
-        if (balls[i].y + balls[i].r > h) {
-            balls[i].y = h - balls[i].r;
-            balls[i].dy *= -1;
-            balls[i].dy /= 1.1;
-        } else if (balls[i].y - balls[i].r < 0) {
-            balls[i].y = balls[i].r;
-            balls[i].dy *= -1;
+        // Continuous Collision Detection (linear interpolation):
+        let t = 0; // Where 0 <= t <= 1, t represents the time between frames when the particle is touching the edge.
+
+        // let xt = (1-t)*particles[i].x + t*(particles[i].x + particles[i].dx); // x(t) = t*x(0) + (1-t)*x(1)
+        // let yt = (1-t)*particles[i].y + t*(particles[i].y + particles[i].dy);
+
+
+        if (particles[i].x + particles[i].r + particles[i].dx > w) {
+            t = (w - particles[i].r - particles[i].y) / ((particles[i].x + particles[i].dx) - particles[i].y);
+            particles[i].x += particles[i].dx * t - particles[i].dx * (1-t);
+            particles[i].dx *= -1;
+        } else if (particles[i].x - particles[i].r + particles[i].dx < 0) {
+            t = (0 + particles[i].r - particles[i].x) / ((particles[i].x + particles[i].dx) - particles[i].x);
+            particles[i].x += particles[i].dx * t - particles[i].dx * (1-t);
+            particles[i].dx *= -1;
         }
 
-        balls[i].dy += gravity;
-        balls[i].x += balls[i].dx;
-        balls[i].y += balls[i].dy;
-        context.drawImage(img, balls[i].x - balls[i].r, balls[i].y - balls[i].r, balls[i].r * 2, balls[i].r * 2);
+        if (particles[i].y + particles[i].r + particles[i].dy > h) {
+            t = (h - particles[i].r - particles[i].y) / ((particles[i].y + particles[i].dy) - particles[i].y);
+            particles[i].y += particles[i].dy * t - particles[i].dy * (1-t);
+            particles[i].dy *= -1;
+        } else if (particles[i].y - particles[i].r + particles[i].dy < 0) {
+            t = (0 + particles[i].r - particles[i].y) / ((particles[i].y + particles[i].dy) - particles[i].y);
+            particles[i].y += (particles[i].dy * t - particles[i].dy * (1-t));
+            particles[i].dy *= -1;
+        }
+
+        if (t == 0) { // crude solution but whatever
+            particles[i].x += particles[i].dx;
+            particles[i].y += particles[i].dy;
+        }
+
+        context.beginPath();
+        context.fillStyle = "#" + particles[i].color;
+        context.arc(particles[i].x, particles[i].y, particles[i].r, 0, 2*Math.PI);
+        context.fill();
     }
     window.requestAnimationFrame(startAnim);
 }
